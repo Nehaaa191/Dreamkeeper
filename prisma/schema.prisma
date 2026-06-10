@@ -1,0 +1,115 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String    @id @default(uuid())
+  email          String    @unique
+  username       String    @unique
+  passwordHash   String // For authentication
+  createdAt      DateTime  @default(now())
+  diamonds       Int       @default(0)
+  streakCount    Int       @default(0)
+  lastLogDate    DateTime?
+  avatarConfig   Json? // Stores avatar customization choices
+  roomTheme      String    @default("fairy_bedroom")
+  fairySkin      String    @default("lumina")
+
+  dreams           Dream[]
+  userAchievements UserAchievement[]
+  inventory        UserInventory[]
+}
+
+model Dream {
+  id             String    @id @default(uuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title          String?
+  content        String
+  mood           String? // 'peaceful', 'fearful', 'joyful', etc.
+  tags           String[] // Tag array
+  loggedAt       DateTime  @default(now())
+  containerType  String    @default("crystal_jar") // 'crystal_jar', 'potion_bottle', etc.
+  containerColor String // Derived from dream emotion (e.g. hex code or theme name)
+  isPublic       Boolean   @default(false)
+  isSharedGalaxy Boolean   @default(false)
+
+  // AI Analysis Results
+  emotions       Json? // { joy: 0.8, fear: 0.1, etc. }
+  symbols        String[] // ['fox', 'moon', 'forest']
+  themes         String[] // ['intuition', 'freedom']
+  // Note: pgvector can be defined as Unsupported type in Prisma
+  // embedding    Unsupported("vector(768)")? 
+  luminaResponse String?
+  aiSceneUrl     String?
+
+  galaxyEntries GalaxyEntry[]
+}
+
+model Achievement {
+  id            String   @id @default(uuid())
+  key           String   @unique // 'first_dream', 'seven_streak', etc.
+  name          String
+  description   String
+  iconUrl       String?
+  diamondReward Int      @default(0)
+
+  userAchievements UserAchievement[]
+}
+
+model UserAchievement {
+  id             String      @id @default(uuid())
+  userId         String
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievementKey String
+  achievement    Achievement @relation(fields: [achievementKey], references: [key], onDelete: Cascade)
+  earnedAt       DateTime    @default(now())
+
+  @@unique([userId, achievementKey])
+}
+
+model StoreItem {
+  id          String   @id @default(uuid())
+  category    String // 'jar_skin', 'room_theme', 'fairy_skin'
+  name        String
+  description String
+  diamondCost Int
+  previewUrl  String?
+  isStarter   Boolean  @default(false)
+
+  userInventory UserInventory[]
+}
+
+model UserInventory {
+  id         String    @id @default(uuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  itemId     String
+  storeItem  StoreItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  acquiredAt DateTime  @default(now())
+  isEquipped Boolean   @default(false)
+
+  @@unique([userId, itemId])
+}
+
+model GalaxyEntry {
+  id          String   @id @default(uuid())
+  dreamId     String
+  dream       Dream    @relation(fields: [dreamId], references: [id], onDelete: Cascade)
+  excerpt     String // First 150 chars auto-generated
+  emotionTag  String
+  symbolTags  String[]
+  starX       Float // position in 3D space
+  starY       Float
+  starZ       Float
+  sharedAt    DateTime @default(now())
+  reportCount Int      @default(0)
+}

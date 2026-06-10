@@ -45,7 +45,7 @@ docker-compose up -d
 ### 3. Install & Start Frontend
 Navigate to the web app directory, set up dependencies, and run the developer server:
 ```bash
-cd apps/web
+cd frontend
 npm install
 npm run dev
 ```
